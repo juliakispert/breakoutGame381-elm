@@ -12,5 +12,5 @@ gameApplication game =
 
 -- The main entry point for the app
 
-main = Breakout
+main = Breakout.game
   |> gameApplication
