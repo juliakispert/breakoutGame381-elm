@@ -53,6 +53,7 @@ type alias Brick =
   { x : Float
   , y : Float
   , shape : Shape
+  , hit : Bool
   }
 
 type alias Model =
@@ -98,6 +99,7 @@ getBrick (xIndex, yIndex) =
     { x = x + (xIndex+1)*brickWidth + xIndex*xPadding
     , y = y - (yIndex+3)*brickHeight - yIndex*yPadding
     , shape = rectangle brickColor brickWidth brickHeight
+    , hit = False
     }
 
 ------ VIEW ------
@@ -129,8 +131,7 @@ viewBrick color width height obj =
 update computer model =
   model
     |> handleMotion computer
-    -- |> findBallCollision model.ball model.paddle
-    
+    |> checkBrickCollisions    
 
 handleMotion computer model =
   { model
@@ -152,7 +153,12 @@ moveBall paddle computer ball=
     , dy = bounceOffWallorPaddle (ball.y + ball.dy - ballRadius < computer.screen.bottom) (ball.y + ball.dy + ballRadius > computer.screen.top ) paddle ball.x ball.y ball.dy
     }
 
+brickIsNotHit brick =
+  not brick.hit
 
+checkBrickCollisions model =
+  { model 
+    | bricks = List.filter brickIsNotHit model.bricks}
 
 -- paddleCollision dy x y paddle =
 --     bounce dy (x - ballRadius >= paddle.x + paddleWidth/2 && x + ballRadius <= paddle.x + paddleWidth/2) (y + ballRadius >= paddle.y - paddleHeight/2)
