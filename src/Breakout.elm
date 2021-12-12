@@ -2,7 +2,8 @@
 -- The classic game of Asteroids, minus the pesky problem of dying.
 --
 -- Author: Paul Cantrell
---
+-- documentation, comments, random for the ball + angle of the ball first drop, 
+-- computer.screen dimensions, brick colors, brick collisions, win/lose status,
 module Breakout exposing (game)
 
 import Playground exposing (..)
