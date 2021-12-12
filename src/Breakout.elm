@@ -141,7 +141,7 @@ update computer model =
 
 handleMotion computer model =
   { model
-   | ball = (moveBall model.paddle computer) model.ball
+   | ball = (moveBall computer model model.ball)
    , paddle = (movePaddle computer) model.paddle
   }
 -- findBallCollision ball paddle model =
@@ -150,13 +150,13 @@ handleMotion computer model =
 --   }
 
 
-moveBall : Paddle -> Computer -> Ball -> Ball
-moveBall paddle computer ball=
+moveBall : Computer -> Model -> Ball -> Ball
+moveBall computer model ball =
   { ball
     | x = ball.x + ball.dx
     , y = ball.y + ball.dy
-    , dx = bounceOffWall (ball.x + ball.dx - ballRadius < computer.screen.left) (ball.x + ball.dx + ballRadius > computer.screen.right) ball.dx
-    , dy = bounceOffWallorPaddle (ball.y + ball.dy - ballRadius < computer.screen.bottom) (ball.y + ball.dy + ballRadius > computer.screen.top ) paddle ball.x ball.y ball.dy
+    , dx = horizontalBounce computer model
+    , dy = verticalBounce computer model
     }
 
 brickIsNotHit brick =
@@ -175,24 +175,33 @@ movePaddle computer obj =
 
 -- this is a helper function written by Julia Kispert to have the ball bounce off the edges of the screen
 
-bounceOffWall min max dx =
-  if (min || max)
+horizontalBounce computer model =
+  if ((model.ball.x + model.ball.dx - ballRadius < computer.screen.left) || (model.ball.x + model.ball.dx + ballRadius > computer.screen.right))
   then
-    dx * (-1)
+    model.ball.dx * (-1)
   else
-    dx
+    model.ball.dx
 
-bounceOffWallorPaddle min max paddle x y dy=
-  if (min || max)
+-- bounceOffBrick model =
+  
+
+verticalBounce computer model =
+  if ((model.ball.y + model.ball.dy - ballRadius < computer.screen.bottom) || (model.ball.y + model.ball.dy + ballRadius > computer.screen.top))
   then
-    dy * (-1)
+    model.ball.dy * (-1)
   else
-    bounce dy (x - ballRadius >= paddle.x + paddleWidth/2 && x + ballRadius <= paddle.x + paddleWidth/2) (y + ballRadius >= paddle.y - paddleHeight/2)
+    bounce model
 
-bounce : Float -> Bool -> Bool -> Float
-bounce dy xCollision yCollision = 
-  if xCollision && yCollision then 
-    dy * (-1)
-  else 
-    dy
+--bounce : Float -> Bool -> Bool -> Float
+bounce model = 
+  let 
+    xCollision = (model.ball.x >= model.paddle.x - paddleWidth/2 && model.ball.x <= model.paddle.x + paddleWidth/2)
+    yCollision = (model.ball.y - ballRadius <= model.paddle.y + paddleHeight/2)
+  in
+    if xCollision && yCollision then 
+      model.ball.dy * (-1)
+    else 
+      model.ball.dy
 -- Created by Paul Cantrel via Asteroid Assignment
+
+-- have to change it so ball falls off screen
