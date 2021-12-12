@@ -36,18 +36,29 @@ screenHeight = 559
 
 ------ MODEL ------
 
-type alias GameObject =
+type alias Ball =
   { x : Float
   , y : Float
   , dx : Float
   , dy : Float
   , shape : Shape
   }
+type alias Paddle = 
+  { x : Float
+  , y : Float
+  , shape : Shape
+  }
+
+type alias Brick = 
+  { x : Float
+  , y : Float
+  , shape : Shape
+  }
 
 type alias Model =
-  { ball : GameObject
-  , paddle : GameObject
-  , bricks : List GameObject
+  { ball : Ball
+  , paddle : Paddle
+  , bricks : List Brick
   }
 
 initialState : Model
@@ -62,8 +73,6 @@ initialState =
   , paddle =
       { x = 0
       , y = -250
-      , dx = 0
-      , dy = 0
       , shape = rectangle paddleColor paddleWidth paddleHeight
       }
   , bricks = (brickIndices |> List.map getBrick)
@@ -78,7 +87,7 @@ brickIndices =
   , (0,5) , (1,5) , (2,5) , (3,5) , (4,5) , (5,5) , (6,5)
   , (0,6) , (1,6) , (2,6) , (3,6) , (4,6) , (5,6) , (6,6) ]
 
-getBrick: (Float, Float) -> GameObject
+getBrick: (Float, Float) -> Brick
 getBrick (xIndex, yIndex) =
   let
     x = -smallerScreenWidth / 2
@@ -88,8 +97,6 @@ getBrick (xIndex, yIndex) =
   in
     { x = x + (xIndex+1)*brickWidth + xIndex*xPadding
     , y = y - (yIndex+3)*brickHeight - yIndex*yPadding
-    , dx = 0
-    , dy = 0
     , shape = rectangle brickColor brickWidth brickHeight
     }
 
@@ -98,16 +105,22 @@ getBrick (xIndex, yIndex) =
 view computer model =
   [rectangle white computer.screen.width computer.screen.height]
     ++ [model.ball      |> viewBall ballColor ballRadius]
-    ++ [model.paddle    |> viewRectangle paddleColor paddleWidth paddleHeight]
-    ++ (model.bricks    |> List.map (viewRectangle brickColor brickWidth brickHeight))
+    ++ [model.paddle    |> viewPaddle paddleColor paddleWidth paddleHeight]
+    ++ (model.bricks    |> List.map (viewBrick brickColor brickWidth brickHeight))
 
-viewBall : Color -> Float -> GameObject -> Shape
+viewBall : Color -> Float -> Ball -> Shape
 viewBall color radius obj =
   circle color radius
     |> move obj.x obj.y
 
-viewRectangle : Color -> Float -> Float -> GameObject -> Shape
-viewRectangle color width height obj =
+viewPaddle : Color -> Float -> Float -> Paddle -> Shape
+viewPaddle color width height obj =
+  rectangle color width height
+    |> move obj.x obj.y
+
+
+viewBrick : Color -> Float -> Float -> Brick -> Shape
+viewBrick color width height obj =
   rectangle color width height
     |> move obj.x obj.y
 
@@ -116,6 +129,7 @@ viewRectangle color width height obj =
 update computer model =
   model
     |> handleMotion computer
+    -- |> findCollided model.ball model.paddle
     
 
 handleMotion computer model =
@@ -123,8 +137,16 @@ handleMotion computer model =
    | ball = (moveObject computer) model.ball
    , paddle = (movePaddle computer) model.paddle
   }
+findCollided ball paddle =
+ (hypot (ball.x - paddle.x) (ball.y - paddle.y)) <= ball.radius + paddle.radius
 
-moveObject : Computer -> GameObject -> GameObject
+objectsCollide obj0 obj1 =
+  (hypot (obj0.x - obj1.x) (obj0.y - obj1.y)) <= obj0.radius + obj1.radius
+
+anyCollide otherShapes shape =
+  List.any (objectsCollide shape) otherShapes
+
+moveObject : Computer -> Ball -> Ball
 moveObject computer obj =
   { obj
     | x = obj.x + obj.dx
@@ -133,7 +155,7 @@ moveObject computer obj =
     , dy = bounce (obj.y + obj.dy - ballRadius < computer.screen.bottom) (obj.y + obj.dy + ballRadius > computer.screen.top ) obj.dy
     }
 
-movePaddle : Computer -> GameObject -> GameObject
+movePaddle : Computer -> Paddle -> Paddle
 movePaddle computer obj =
   { obj | x = computer.mouse.x }
 
@@ -145,3 +167,6 @@ bounce min max dx =
     dx * (-1)
   else
     dx
+-- Created by Paul Cantrel via Asteroid Assignment
+hypot x y =  -- mysteriously, Elm doesn't have this built in
+  toPolar (x, y) |> Tuple.first
