@@ -7,6 +7,7 @@
 module Breakout exposing (game)
 
 import Playground exposing (..)
+import Array
 import Random
 import Set
 
@@ -26,9 +27,12 @@ paddleWidth = 200
 paddleHeight = 20
 paddleColor = black
 
-brickColor = red
+brickColors = Array.fromList [rgb 247 0 0, rgb 255 178 46, rgb 247 240 40, rgb 42 252 0, rgb 0 248 252, rgb 252 0 239, rgb 255 171 186]
 brickWidth = 70
-brickHeight = 15
+brickHeight = 30
+
+brickColor: Color
+brickColor = red 
 
 screenWidth = 1280
 smallerScreenWidth = 638
@@ -52,6 +56,7 @@ type alias Paddle =
 type alias Brick = 
   { x : Float
   , y : Float
+  , color: Color
   , shape : Shape
   , hit : Bool
   }
@@ -92,13 +97,14 @@ getBrick: (Float, Float) -> Brick
 getBrick (xIndex, yIndex) =
   let
     x = -smallerScreenWidth / 2
-    y = screenHeight / 2
+    y = screenHeight / 1.5
     xPadding = smallerScreenWidth / 50
-    yPadding = screenHeight / 100
+    yPadding = screenHeight / 75
   in
     { x = x + (xIndex+1)*brickWidth + xIndex*xPadding
     , y = y - (yIndex+3)*brickHeight - yIndex*yPadding
-    , shape = rectangle brickColor brickWidth brickHeight
+    , color = (Maybe.withDefault red (Array.get (yIndex |> round) brickColors))
+    , shape = rectangle (Maybe.withDefault red (Array.get (yIndex |> round) brickColors)) brickWidth brickHeight
     , hit = False
     }
 
@@ -108,7 +114,7 @@ view computer model =
   [rectangle white computer.screen.width computer.screen.height]
     ++ [model.ball      |> viewBall ballColor ballRadius]
     ++ [model.paddle    |> viewPaddle paddleColor paddleWidth paddleHeight]
-    ++ (model.bricks    |> List.map (viewBrick brickColor brickWidth brickHeight))
+    ++ (model.bricks    |> List.map (viewBrick brickWidth brickHeight))
 
 viewBall : Color -> Float -> Ball -> Shape
 viewBall color radius obj =
@@ -121,9 +127,9 @@ viewPaddle color width height obj =
     |> move obj.x obj.y
 
 
-viewBrick : Color -> Float -> Float -> Brick -> Shape
-viewBrick color width height obj =
-  rectangle color width height
+viewBrick : Float -> Float -> Brick -> Shape
+viewBrick width height obj =
+  rectangle obj.color width height
     |> move obj.x obj.y
 
 ------ UPDATE ------
