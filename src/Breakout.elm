@@ -22,7 +22,7 @@ ballRadius = 10
 ballColor = black
 initialBallSpeed = 0.75
 
-paddleWidth = 80
+paddleWidth = 200
 paddleHeight = 20
 paddleColor = black
 
@@ -129,31 +129,33 @@ viewBrick color width height obj =
 update computer model =
   model
     |> handleMotion computer
-    -- |> findCollided model.ball model.paddle
+    -- |> findBallCollision model.ball model.paddle
     
 
 handleMotion computer model =
   { model
-   | ball = (moveObject computer) model.ball
+   | ball = (moveBall model.paddle computer) model.ball
    , paddle = (movePaddle computer) model.paddle
   }
-findCollided ball paddle =
- (hypot (ball.x - paddle.x) (ball.y - paddle.y)) <= ball.radius + paddle.radius
+-- findBallCollision ball paddle model =
+--   { model
+--     | ball = (paddleCollision ball paddle)
+--   }
 
-objectsCollide obj0 obj1 =
-  (hypot (obj0.x - obj1.x) (obj0.y - obj1.y)) <= obj0.radius + obj1.radius
 
-anyCollide otherShapes shape =
-  List.any (objectsCollide shape) otherShapes
-
-moveObject : Computer -> Ball -> Ball
-moveObject computer obj =
-  { obj
-    | x = obj.x + obj.dx
-    , y = obj.y + obj.dy
-    , dx = bounce (obj.x + obj.dx - ballRadius < computer.screen.left) (obj.x + obj.dx + ballRadius > computer.screen.right) obj.dx
-    , dy = bounce (obj.y + obj.dy - ballRadius < computer.screen.bottom) (obj.y + obj.dy + ballRadius > computer.screen.top ) obj.dy
+moveBall : Paddle -> Computer -> Ball -> Ball
+moveBall paddle computer ball=
+  { ball
+    | x = ball.x + ball.dx
+    , y = ball.y + ball.dy
+    , dx = bounceOffWall (ball.x + ball.dx - ballRadius < computer.screen.left) (ball.x + ball.dx + ballRadius > computer.screen.right) ball.dx
+    , dy = bounceOffWallorPaddle (ball.y + ball.dy - ballRadius < computer.screen.bottom) (ball.y + ball.dy + ballRadius > computer.screen.top ) paddle ball.x ball.y ball.dy
     }
+
+
+
+-- paddleCollision dy x y paddle =
+--     bounce dy (x - ballRadius >= paddle.x + paddleWidth/2 && x + ballRadius <= paddle.x + paddleWidth/2) (y + ballRadius >= paddle.y - paddleHeight/2)
 
 movePaddle : Computer -> Paddle -> Paddle
 movePaddle computer obj =
@@ -161,12 +163,24 @@ movePaddle computer obj =
 
 -- this is a helper function written by Julia Kispert to have the ball bounce off the edges of the screen
 
-bounce min max dx =
+bounceOffWall min max dx =
   if (min || max)
   then
     dx * (-1)
   else
     dx
+
+bounceOffWallorPaddle min max paddle x y dy=
+  if (min || max)
+  then
+    dy * (-1)
+  else
+    bounce dy (x - ballRadius >= paddle.x + paddleWidth/2 && x + ballRadius <= paddle.x + paddleWidth/2) (y + ballRadius >= paddle.y - paddleHeight/2)
+
+bounce : Float -> Bool -> Bool -> Float
+bounce dy xCollision yCollision = 
+  if xCollision && yCollision then 
+    dy * (-1)
+  else 
+    dy
 -- Created by Paul Cantrel via Asteroid Assignment
-hypot x y =  -- mysteriously, Elm doesn't have this built in
-  toPolar (x, y) |> Tuple.first
