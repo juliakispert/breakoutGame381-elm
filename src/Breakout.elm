@@ -43,15 +43,10 @@ type alias GameObject =
   , shape : Shape
   }
 
-type alias Brick =
-  { x : Float
-  , y : Float
-  }
-
 type alias Model =
   { ball : GameObject
   , paddle : GameObject
-  , bricks : List Brick
+  , bricks : List GameObject
   }
 
 initialState : Model
@@ -82,7 +77,7 @@ brickIndices =
   , (0,5) , (1,5) , (2,5) , (3,5) , (4,5) , (5,5) , (6,5)
   , (0,6) , (1,6) , (2,6) , (3,6) , (4,6) , (5,6) , (6,6) ]
 
-getBrick: (Float, Float) -> Brick
+getBrick: (Float, Float) -> GameObject
 getBrick (xIndex, yIndex) =
   let
     x = -smallerScreenWidth / 2
@@ -92,6 +87,9 @@ getBrick (xIndex, yIndex) =
   in
     { x = x + (xIndex+1)*brickWidth + xIndex*xPadding
     , y = y - (yIndex+3)*brickHeight - yIndex*yPadding
+    , dx = 0
+    , dy = 0
+    , shape = rectangle brickColor brickWidth brickHeight
     }
 
 ------ VIEW ------
@@ -100,7 +98,7 @@ view computer model =
   [rectangle white computer.screen.width computer.screen.height]
     ++ [model.ball      |> viewBall ballColor ballRadius]
     ++ [model.paddle    |> viewRectangle paddleColor paddleWidth paddleHeight]
-    ++ (model.bricks    |> List.map (viewBrick brickColor brickWidth brickHeight))
+    ++ (model.bricks    |> List.map (viewRectangle brickColor brickWidth brickHeight))
 
 viewBall : Color -> Float -> GameObject -> Shape
 viewBall color radius obj =
@@ -109,11 +107,6 @@ viewBall color radius obj =
 
 viewRectangle : Color -> Float -> Float -> GameObject -> Shape
 viewRectangle color width height obj =
-  rectangle color width height
-    |> move obj.x obj.y
-
-viewBrick : Color -> Float -> Float -> Brick -> Shape
-viewBrick color width height obj =
   rectangle color width height
     |> move obj.x obj.y
 
