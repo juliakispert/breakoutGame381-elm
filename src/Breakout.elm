@@ -195,8 +195,8 @@ verticalBounce computer model =
 --bounce : Float -> Bool -> Bool -> Float
 bounce model = 
   let 
-    xCollision = (model.ball.x >= model.paddle.x - paddleWidth/2 && model.ball.x <= model.paddle.x + paddleWidth/2)
-    yCollision = (model.ball.y - ballRadius <= model.paddle.y + paddleHeight/2)
+    xCollision = (model.ball.x + model.ball.dx >= model.paddle.x - paddleWidth/2 && model.ball.x + model.ball.dx <= model.paddle.x + paddleWidth/2)
+    yCollision = (model.ball.y + model.ball.dy - ballRadius <= model.paddle.y + paddleHeight/2)
   in
     if xCollision && yCollision then 
       model.ball.dy * (-1)
