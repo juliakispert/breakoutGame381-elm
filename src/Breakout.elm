@@ -10,6 +10,7 @@ import Playground exposing (..)
 import Array
 import Random
 import Set
+import Html exposing (object)
 
 game =
   { initialState = initialState
@@ -21,7 +22,6 @@ game =
 
 ballRadius = 10
 ballColor = black
-initialBallSpeed = 0.75
 
 paddleWidth = 200
 paddleHeight = 20
@@ -46,6 +46,8 @@ type alias Ball =
   , dx : Float
   , dy : Float
   , shape : Shape
+  , lives : Int 
+  , alive : Bool
   }
 type alias Paddle = 
   { x : Float
@@ -56,7 +58,7 @@ type alias Paddle =
 type alias Brick = 
   { x : Float
   , y : Float
-  , color: Color
+  , color : Color
   , shape : Shape
   , hit : Bool
   }
@@ -75,6 +77,8 @@ initialState =
       , dx = 10
       , dy = 10
       , shape = circle ballColor ballRadius
+      , lives = 3
+      , alive = True
       }
   , paddle =
       { x = 0
@@ -137,18 +141,20 @@ viewBrick width height obj =
 update computer model =
   model
     |> handleMotion computer
-    |> checkBrickCollisions    
+    |> checkBrickCollisions  
+    |> handleGameLogic computer
 
 handleMotion computer model =
   { model
    | ball = (moveBall computer model model.ball)
    , paddle = (movePaddle computer) model.paddle
   }
--- findBallCollision ball paddle model =
---   { model
---     | ball = (paddleCollision ball paddle)
---   }
 
+
+handleGameLogic computer model =
+  { model
+   | ball = (checkWinLose computer model.ball)
+  }
 
 moveBall : Computer -> Model -> Ball -> Ball
 moveBall computer model ball =
@@ -157,7 +163,38 @@ moveBall computer model ball =
     , y = ball.y + ball.dy
     , dx = horizontalBounce computer model
     , dy = verticalBounce computer model
+    -- , lives = lifeLogic computer model.ball 
     }
+
+
+checkWinLose : Computer -> Ball -> Ball
+checkWinLose computer ball = 
+ { ball
+    | lives = lifeLogic computer ball
+    ,  alive = ballAlive computer ball
+    }
+
+lifeLogic computer ball  =
+  let
+      lifeReduction = ball.y + ballRadius >= computer.screen.bottom -- check if ball's position is at the bottom of the screen
+  in
+    if (lifeReduction) then 
+      ball.lives - 1
+  
+    else
+      ball.lives
+
+
+ballAlive : Computer -> Ball -> Bool
+ballAlive computer ball  =
+  let
+      lifeReduction = ball.y + ballRadius >= computer.screen.bottom -- check if ball's position is at the bottom of the screen
+  in
+    if (lifeReduction) then 
+      not ball.alive
+  
+    else
+    ball.alive
 
 brickIsNotHit brick =
   not brick.hit
@@ -166,15 +203,13 @@ checkBrickCollisions model =
   { model 
     | bricks = List.filter brickIsNotHit model.bricks}
 
--- paddleCollision dy x y paddle =
---     bounce dy (x - ballRadius >= paddle.x + paddleWidth/2 && x + ballRadius <= paddle.x + paddleWidth/2) (y + ballRadius >= paddle.y - paddleHeight/2)
 
 movePaddle : Computer -> Paddle -> Paddle
 movePaddle computer obj =
   { obj | x = computer.mouse.x }
 
 -- this is a helper function written by Julia Kispert to have the ball bounce off the edges of the screen
-
+horizontalBounce: Computer -> Model -> Number
 horizontalBounce computer model =
   if ((model.ball.x + model.ball.dx - ballRadius < computer.screen.left) || (model.ball.x + model.ball.dx + ballRadius > computer.screen.right))
   then
@@ -182,26 +217,25 @@ horizontalBounce computer model =
   else
     model.ball.dx
 
--- bounceOffBrick model =
   
-
+verticalBounce: Computer -> Model -> Number
 verticalBounce computer model =
-  if ((model.ball.y + model.ball.dy - ballRadius < computer.screen.bottom) || (model.ball.y + model.ball.dy + ballRadius > computer.screen.top))
+  if ((model.ball.y + model.ball.dy + ballRadius > computer.screen.top))
   then
     model.ball.dy * (-1)
   else
-    bounce model
+    if (model.ball.y + model.ball.dy + ballRadius < computer.screen.bottom) then 
+      0
+    else
+      bounce model
 
---bounce : Float -> Bool -> Bool -> Float
+bounce : Model -> Float
 bounce model = 
   let 
-    xCollision = (model.ball.x + model.ball.dx >= model.paddle.x - paddleWidth/2 && model.ball.x + model.ball.dx <= model.paddle.x + paddleWidth/2)
-    yCollision = (model.ball.y + model.ball.dy - ballRadius <= model.paddle.y + paddleHeight/2)
+    xCollision = (model.ball.x + model.ball.dx > model.paddle.x - paddleWidth/2 && model.ball.x + model.ball.dx < model.paddle.x + paddleWidth/2)
+    yCollision = (model.ball.y + model.ball.dy - ballRadius == model.paddle.y + paddleHeight/2)
   in
     if xCollision && yCollision then 
       model.ball.dy * (-1)
     else 
       model.ball.dy
--- Created by Paul Cantrel via Asteroid Assignment
-
--- have to change it so ball falls off screen
