@@ -153,7 +153,7 @@ viewHelpMessage computer helpMessage =
 update computer model = 
   case model.state of 
     Playing -> playingUpdate computer model 
-    GameOver -> model 
+    GameOver -> gameOverUpdate computer model 
     NewRound -> newRoundUpdate computer model
 playingUpdate computer model =
   model
@@ -167,25 +167,16 @@ newRoundUpdate computer model=
     |> handlePause computer
 
 
--- gameOverUpdate computer model = 
---   model 
---     |> endGame 
+gameOverUpdate computer model = 
+  model 
+    |> endGame computer 
 
--- endGame model = 
---   { model 
---     | ball =
---             { x = 0
---               , y = 0
---               , dx = 0
---               , dy = 0
---               , shape = circle white ballRadius
---               }
---     , paddle = 
---         { x = 0
---           , y = -250
---           , shape = rectangle white paddleWidth paddleHeight
---           }
---   }
+endGame computer model = 
+   if keyPressed "P" computer then 
+    initialState
+  else 
+    model
+  
 
 handlePause computer model= 
   if keyPressed "R" computer then 
@@ -208,7 +199,7 @@ checkDeath computer model =
     if (model.lives == 0) then 
       { model 
         | state = GameOver
-        , helpMessage = words black "Game Over, You Lost."
+        , helpMessage = words black "Game Over, You Lost. Press P to play again."
         }
     else
       model
