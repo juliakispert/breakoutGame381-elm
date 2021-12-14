@@ -11,6 +11,8 @@ import Array
 import Random
 import Set
 import Html exposing (object)
+import Process
+import Task
 
 game =
   { initialState = initialState
@@ -30,10 +32,6 @@ paddleColor = black
 brickColors = Array.fromList [rgb 247 0 0, rgb 255 178 46, rgb 247 240 40, rgb 42 252 0, rgb 0 248 252, rgb 252 0 239, rgb 255 171 186]
 brickWidth = 70
 brickHeight = 30
-
-brickColor: Color
-brickColor = red 
-
 screenWidth = 1280
 smallerScreenWidth = 638
 screenHeight = 559
@@ -63,6 +61,7 @@ type alias Brick =
   , hit : Bool
   }
 
+
 type alias Model =
   { ball : Ball
   , paddle : Paddle
@@ -87,7 +86,6 @@ initialState =
       }
   , bricks = (brickIndices |> List.map getBrick)
   }
-
 brickIndices = 
   [ (0,0) , (1,0) , (2,0) , (3,0) , (4,0) , (5,0) , (6,0) 
   , (0,1) , (1,1) , (2,1) , (3,1) , (4,1) , (5,1) , (6,1)
@@ -142,8 +140,26 @@ update computer model =
   model
     |> handleMotion computer
     |> checkBrickCollisions  
-    |> handleGameLogic computer
+    |> handleGameLogic computer 
+    -- |> handlePause
+-- handlePause model =
+--  if model.ball.alive then 
+--     model 
+--   else
+--     resetBall model.ball
+    
 
+resetRound model = 
+ { model 
+    | ball = resetBall model.ball  } 
+resetBall ball = 
+  { ball
+    | x = 0
+    , y = 0 
+    , dx = 10
+    , dy = 10
+    , alive = True
+    }
 handleMotion computer model =
   { model
    | ball = (moveBall computer model model.ball)
@@ -153,7 +169,7 @@ handleMotion computer model =
 
 handleGameLogic computer model =
   { model
-   | ball = (checkWinLose computer model.ball)
+   | ball = (checkWinLose computer model model.ball)
   }
 
 moveBall : Computer -> Model -> Ball -> Ball
@@ -163,17 +179,24 @@ moveBall computer model ball =
     , y = ball.y + ball.dy
     , dx = horizontalBounce computer model
     , dy = verticalBounce computer model
-    -- , lives = lifeLogic computer model.ball 
     }
 
 
-checkWinLose : Computer -> Ball -> Ball
-checkWinLose computer ball = 
+checkWinLose : Computer -> Model-> Ball -> Ball
+checkWinLose computer model ball = 
  { ball
-    | lives = lifeLogic computer ball
-    ,  alive = ballAlive computer ball
+    | 
+    -- --   x = checkForPause ball 
+    -- y = ballAlive computer ball
+      lives = lifeLogic computer ball
+    , alive = ballAlive computer model ball
     }
 
+-- checkFor ball = 
+--   if (not ball.alive) then 
+--     Process.sleep(30000)
+--   else 
+--     ball.x
 lifeLogic computer ball  =
   let
       lifeReduction = ball.y + ballRadius >= computer.screen.bottom -- check if ball's position is at the bottom of the screen
@@ -185,16 +208,17 @@ lifeLogic computer ball  =
       ball.lives
 
 
-ballAlive : Computer -> Ball -> Bool
-ballAlive computer ball  =
+ballAlive : Computer -> Model -> Ball -> Bool
+ballAlive computer model ball  =
   let
       lifeReduction = ball.y + ballRadius >= computer.screen.bottom -- check if ball's position is at the bottom of the screen
   in
     if (lifeReduction) then 
       not ball.alive
-  
     else
-    ball.alive
+      ball.alive
+
+
 
 brickIsNotHit brick =
   not brick.hit
