@@ -152,14 +152,46 @@ handleMotion computer model =
    , paddle = (movePaddle computer) model.paddle
   }
 
+
+
 moveBall : Computer -> Model -> Ball -> Ball
 moveBall computer model ball =
   { ball
     | x = ball.x + ball.dx
     , y = ball.y + ball.dy
-    , dx = ball.dx
-    , dy = ball.dy
+    , dx = horizontalBounce computer model
+    , dy = verticalBounce computer model
     }
+-- this is a helper function written by Julia Kispert to have the ball bounce off the edges of the screen
+horizontalBounce: Computer -> Model -> Number
+horizontalBounce computer model =
+  if ((model.ball.x + model.ball.dx - ballRadius < computer.screen.left) || (model.ball.x + model.ball.dx + ballRadius > computer.screen.right))
+  then
+    model.ball.dx * (-1)
+  else
+    model.ball.dx
+
+verticalBounce: Computer -> Model -> Number
+verticalBounce computer model =
+  if ((model.ball.y + model.ball.dy + ballRadius > computer.screen.top))
+  then
+    model.ball.dy * (-1)
+  else
+    if (model.ball.y + model.ball.dy + ballRadius < computer.screen.bottom) then 
+      0
+    else
+      bounce model
+
+bounce : Model -> Float
+bounce model = 
+  let 
+    xCollision = (model.ball.x + model.ball.dx > model.paddle.x - paddleWidth/2 && model.ball.x + model.ball.dx < model.paddle.x + paddleWidth/2)
+    yCollision = (model.ball.y + model.ball.dy - ballRadius == model.paddle.y + paddleHeight/2)
+  in
+    if xCollision && yCollision then 
+      model.ball.dy * (-1)
+    else 
+      model.ball.dy
 
 brickIsNotHit brick =
   not brick.hit
@@ -191,7 +223,7 @@ bounceOffScreen computer ball =
     else
       ball
 
-bounceOffPaddle paddle ball =
+bounceOffPaddle ball paddle =
   let
     nextX = ball.x + ball.dx
     nextY = ball.y + ball.dy
@@ -228,11 +260,11 @@ bounceOffBrick computer ball brick =
   in
     if (topCollision || bottomCollision)
     then
-      brickIsHit brick
+  --    brickIsHit brick
       switchDy ball
     else if (rightCollision || leftCollision)
     then
-      brickIsHit brick
+ --     brickIsHit brick
       switchDx ball
     else
       ball
