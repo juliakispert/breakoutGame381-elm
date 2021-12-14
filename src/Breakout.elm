@@ -54,35 +54,46 @@ type alias Paddle =
 type alias Brick =
   { x : Float
   , y : Float
-  , color: Color
+  , color : Color
   , shape : Shape
   , hit : Bool
   }
 
+type GameState
+  = Playing
+  | GameOver
+  | NewRound
 
 type alias Model =
   { ball : Ball
   , paddle : Paddle
   , bricks : List Brick
+  , state : GameState
+  , helpMessage : Shape
+  , lives : Int
   }
 
 initialState : Model
 initialState =
- { ball =
-      { x = 0
-      , y = 0
-      , dx = 10
-      , dy = 10
-      , shape = circle ballColor ballRadius
-      }
+  { ball = initialBall
   , paddle =
-      { x = 0
-      , y = -250
-      , shape = rectangle paddleColor paddleWidth paddleHeight
-      }
+    { x = 0
+    , y = -250
+    , shape = rectangle paddleColor paddleWidth paddleHeight
+    }
   , bricks = (brickCoordinates 6 6 |> List.map getBrick)
+  , state = Playing
+  , helpMessage = words white " "
+  , lives = 3
   }
 
+initialBall = 
+  { x = 0
+  , y = 0
+  , dx = 10
+  , dy = -10
+  , shape = circle ballColor ballRadius
+  }
 brickCoordinates: Int -> Int -> List (Float, Float)
 brickCoordinates xs ys =
   List.range 0 ys
@@ -96,7 +107,7 @@ getBrick: (Float, Float) -> Brick
 getBrick (xIndex, yIndex) =
   let
     x = -screenWidth / 2
-    y = screenHeight / 1.5
+    y = screenHeight / 1.25
     xPadding = screenWidth / 50
     yPadding = screenHeight / 75
   in
@@ -114,6 +125,7 @@ view computer model =
     ++ [model.ball      |> viewBall]
     ++ [model.paddle    |> viewPaddle]
     ++ (model.bricks    |> List.map viewBrick)
+    ++ [model.helpMessage |> viewHelpMessage computer]
 
 viewBall : Ball -> Shape
 viewBall ball =
@@ -130,19 +142,82 @@ viewBrick brick =
   rectangle brick.color brickWidth brickHeight
     |> move brick.x brick.y
 
+
+viewHelpMessage computer helpMessage = 
+  helpMessage
+    |> move 0 (computer.screen.top - paddleHeight)
+  
+
 ------ UPDATE ------
 
-update computer model =
+update computer model = 
+  case model.state of 
+    Playing -> playingUpdate computer model 
+    GameOver -> model 
+    NewRound -> newRoundUpdate computer model
+playingUpdate computer model =
   model
     |> handleMotion computer
+    |> checkDeath computer
     |> checkBrickCollisions
     |> removeBricks
+
+newRoundUpdate computer model= 
+  model 
+    |> handlePause computer
+
+
+-- gameOverUpdate computer model = 
+--   model 
+--     |> endGame 
+
+-- endGame model = 
+--   { model 
+--     | ball =
+--             { x = 0
+--               , y = 0
+--               , dx = 0
+--               , dy = 0
+--               , shape = circle white ballRadius
+--               }
+--     , paddle = 
+--         { x = 0
+--           , y = -250
+--           , shape = rectangle white paddleWidth paddleHeight
+--           }
+--   }
+
+handlePause computer model= 
+  if keyPressed "R" computer then 
+    { model 
+        | state = Playing 
+        , helpMessage = words white " " 
+      }
+  else 
+    model
+          
+checkDeath computer model = 
+  if (model.ball.y + ballRadius < computer.screen.bottom) then 
+    { model
+      | ball = initialBall
+      , state = NewRound
+      , lives = model.lives - 1
+      , helpMessage = words black "Press R to start next round"
+      }
+  else
+    if (model.lives == 0) then 
+      { model 
+        | state = GameOver
+        , helpMessage = words black "Game Over, You Lost."
+        }
+    else
+      model
 
 handleMotion computer model =
   { model
    | ball = (moveBall computer model model.ball)
    , paddle = (movePaddle computer model.paddle)
-  }
+   }
 
 moveBall : Computer -> Model -> Ball -> Ball
 moveBall computer model ball =
@@ -168,10 +243,7 @@ verticalBounce computer model =
   then
     model.ball.dy * (-1)
   else
-    if (model.ball.y + model.ball.dy + ballRadius < computer.screen.bottom) then 
-      0
-    else
-      bounceOffPaddle model
+    bounceOffPaddle model
 
 bounceOffPaddle : Model -> Float
 bounceOffPaddle model = 
@@ -224,6 +296,13 @@ brickGetsHit: Brick -> Brick
 brickGetsHit brick =
   { brick
     | hit = True }
+
+-- Helper Methods from Asteroids Programming Languages Homework -- 
+keyPressed keyName computer =
+  [ String.toLower keyName
+  , String.toUpper keyName
+  ]
+    |> List.any (\key -> Set.member key computer.keyboard.keys)
 
 -- bounceOffBricks bricks ball =
 --   bricks |> List.map (bounceOffBrick ball)
