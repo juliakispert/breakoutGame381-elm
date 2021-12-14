@@ -201,8 +201,14 @@ checkDeath computer model =
         | state = GameOver
         , helpMessage = words black "Game Over, You Lost. Press P to play again."
         }
-    else
-      model
+    else 
+      if (List.length model.bricks == 0) then 
+        { model 
+        | state = GameOver
+        , helpMessage = words black "Game Over, You Won. Press P to play again."
+        }
+      else
+        model
 
 handleMotion computer model =
   { model
