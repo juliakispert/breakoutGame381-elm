@@ -31,9 +31,6 @@ paddleColor = black
 brickColors = Array.fromList [rgb 247 0 0, rgb 255 178 46, rgb 247 240 40, rgb 42 252 0, rgb 0 248 252, rgb 252 0 239, rgb 255 171 186]
 brickWidth = 70
 brickHeight = 30
-brickColor: Color
-brickColor = red
-
 screenWidth = 1280
 smallerScreenWidth = 638
 screenHeight = 559
@@ -61,6 +58,7 @@ type alias Brick =
   , shape : Shape
   , hit : Bool
   }
+
 
 type alias Model =
   { ball : Ball
