@@ -155,7 +155,7 @@ playingUpdate computer model =
   model
     |> handleMotion computer
     |> checkDeath computer
-    |> updateModel
+    |> updateBallAndBricks
 
 gameOverUpdate computer model = 
   model 
@@ -251,7 +251,7 @@ checkDeath computer model =
   else
     model
   
-updateModel model =
+updateBallAndBricks model =
   let
     t = checkBrickCollisions model
   in
