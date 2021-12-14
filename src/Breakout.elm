@@ -1,9 +1,7 @@
 --
--- The classic game of Asteroids, minus the pesky problem of dying.
+-- The classic game of Breakout.
 --
--- Author: Paul Cantrell
--- documentation, comments, random for the ball + angle of the ball first drop,
--- computer.screen dimensions, brick colors, brick collisions, win/lose status,
+-- Authors: Julia Kispert, Betsy Foy, Ayca Arbay
 
 module Breakout exposing (game)
 
@@ -22,7 +20,7 @@ game =
 
 ballRadius = 10
 ballColor = black
-initialBallSpeed = 0.75
+initialBallSpeed = 8
 
 paddleWidth = 200
 paddleHeight = 20
@@ -56,7 +54,6 @@ type alias Brick =
   , y : Float
   , color: Color
   , shape : Shape
-  , hit : Bool
   }
 
 
@@ -70,9 +67,9 @@ initialState : Model
 initialState =
  { ball =
       { x = 0
-      , y = 0
-      , dx = 10
-      , dy = 10
+      , y = -30
+      , dx = initialBallSpeed
+      , dy = initialBallSpeed
       , shape = circle ballColor ballRadius
       }
   , paddle =
@@ -104,7 +101,6 @@ getBrick (xIndex, yIndex) =
     , y = y - (yIndex + 3) * brickHeight - yIndex * yPadding
     , color = (Maybe.withDefault red (Array.get (yIndex |> round) brickColors))
     , shape = rectangle (Maybe.withDefault red (Array.get (yIndex |> round) brickColors)) brickWidth brickHeight
-    , hit = False
     }
 
 ------ VIEW ------
@@ -135,8 +131,7 @@ viewBrick brick =
 update computer model =
   model
     |> handleMotion computer
-    |> checkBrickCollisions
-    |> removeBricks
+    |> updateModel
 
 handleMotion computer model =
   { model
@@ -187,119 +182,40 @@ bounceOffPaddle model =
 movePaddle : Computer -> Paddle -> Paddle
 movePaddle computer paddle =
   { paddle | x = computer.mouse.x }
+  
+updateModel model =
+  let
+    t = checkBrickCollisions model
+  in
+    { model 
+      | ball = Tuple.first t
+      , bricks = Tuple.second t
+    }
 
 checkBrickCollisions model =
-  { model
-    | bricks = List.filter brickIsNotHit model.bricks}
+  List.foldl checkBrickCollision (model.ball, []) model.bricks
 
-brickIsNotHit brick =
-  not brick.hit
-
-removeBricks model =
-  { model
-    | bricks = (model.bricks |> List.map (removeBrick model.ball)) }
-
-removeBrick ball brick =
+checkBrickCollision: Brick -> (Ball, List Brick) -> (Ball, List Brick)
+checkBrickCollision brick (ball, bricks) =
   let
     ballBottom = ball.y + ball.dy - ballRadius
     ballTop = ball.y + ball.dy + ballRadius
-    ballLeft= ball.x + ball.dx - ballRadius
+    ballLeft = ball.x + ball.dx - ballRadius
     ballRight = ball.x + ball.dx + ballRadius
 
     brickBottom = brick.y - brickHeight/2
     brickTop = brick.y + brickHeight/2
     brickLeft = brick.x - brickWidth/2
     brickRight = brick.x + brickWidth/2
-
-    xRange = (ballRight >= brickLeft && ballLeft <= brickRight)
-    yRange = (ballTop >= brickBottom && ballBottom <= brickTop)
-  in
-    if (xRange && yRange)
-    then
-      brickGetsHit brick
-    else
-      brick
-
-brickGetsHit: Brick -> Brick
-brickGetsHit brick =
-  { brick
-    | hit = True }
-
--- bounceOffBricks bricks ball =
---   bricks |> List.map (bounceOffBrick ball)
-
--- bounceOffBrick ball brick =
---   let
---     ballBottom = ball.y + ball.dy - ballRadius
---     ballTop = ball.y + ball.dy + ballRadius
---     ballLeft= ball.x + ball.dx - ballRadius
---     ballRight = ball.x + ball.dx + ballRadius
-
---     brickBottom = brick.y - brickHeight/2
---     brickTop = brick.y + brickHeight/2
---     brickLeft = brick.x - brickWidth/2
---     brickRight = brick.x + brickWidth/2
-
---     xRange = (ballRight >= brickLeft && ballLeft <= brickRight)
---     yRange = (ballTop >= brickBottom && ballBottom <= brickTop)
   
---     bottomCollision = (xRange && (ballTop >= brickBottom))
---     topCollision = (xRange && (ballBottom <= brickTop))
---     leftCollision = (yRange && (ballRight >= brickLeft))
---     rightCollision = (yRange && (ballLeft <= brickRight))
---   in
---     if (topCollision || bottomCollision)
---     then
---       0
---     else if (rightCollision || leftCollision)
---     then
---       1
---     else
---       2
-
--- bounceOffScreen computer ball =
---   let
---     nextX = ball.x + ball.dx
---     nextY = ball.y + ball.dy
-
---     minX = computer.screen.left + ballRadius
---     maxX = computer.screen.right - ballRadius
---     maxY = computer.screen.top - ballRadius
-
---     xInBounds = (nextX >= minX && nextX <= maxX)
---     yInBounds = nextY <= maxY
---   in
---     if (xInBounds && yInBounds) then
---       { ball
---         | x = nextX
---         , y = nextY }
---     else if (xInBounds) then
---       { ball
---         | x = nextX
---         , y = nextY 
---         , dy = -ball.dy }
---     else
---       { ball
---         | x = nextX
---         , y = nextY 
---         , dx = -ball.dx }
-
--- bounceOffPaddle paddle ball =
---   let
---     nextX = ball.x + ball.dx
---     nextY = ball.y + ball.dy
-
---     minX = paddle.x - paddleWidth/2
---     maxX = paddle.x + paddleWidth/2
---     maxY = paddle.y + paddleHeight/2 + ballRadius
-
---     xInBounds = (nextX >= minX && nextX <= maxX)
---     yInBounds = nextY <= maxY
---   in
---     if (xInBounds && yInBounds) then
---       { ball
---           | x = nextX
---           , y = nextY 
---           , dy = -ball.dy }
---     else
---       ball
+    verticalCollision = (ballRight >= brickLeft && ballLeft <= brickRight) && ((ballTop >= brickBottom && ballTop <= brickTop) || (ballBottom <= brickTop && ballBottom >= brickBottom))
+    horizontalCollision = (ballTop >= brickBottom && ballBottom <= brickTop) && ((ballRight >= brickLeft && ballRight <= brickRight) || (ballLeft <= brickRight && ballLeft >= brickLeft))
+  in
+    if verticalCollision 
+    then
+      ({ ball | dy = -ball.dy }, bricks )
+    else if horizontalCollision
+    then
+      ({ ball | dx = -ball.dx }, bricks )
+    else
+      (ball, brick :: bricks)
