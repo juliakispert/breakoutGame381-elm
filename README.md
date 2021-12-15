@@ -18,7 +18,8 @@ Note: the trajectory of the ball will change based on where it hits the brick, t
 ## You will win if: 
 - you hit all the bricks/ no more bricks on the screen
 
-<img width="594" alt="Screen Shot 2021-12-15 at 3 16 00 PM" src="https://user-images.githubusercontent.com/54856485/146266126-1c84a771-e1a2-47b0-9190-9d0f368141e5.png">
+<img width="1114" alt="Screen Shot 2021-12-15 at 3 58 40 PM" src="https://user-images.githubusercontent.com/54856485/146271636-5f4d693e-107a-43bb-ab78-33a97ec98ca7.png">
+
 
 ## How to Play 
 To launch project run this in terminal: 
