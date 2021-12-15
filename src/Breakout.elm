@@ -15,7 +15,7 @@ game =
   , view = view
   }
 
------- PHYSICS PARAMETERS ------
+------ FEATURE PARAMETERS ------
 
 ballRadius = 10
 ballColor = black
