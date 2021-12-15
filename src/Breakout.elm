@@ -294,3 +294,4 @@ keyPressed keyName computer =
   , String.toUpper keyName
   ]
     |> List.any (\key -> Set.member key computer.keyboard.keys)
+    
