@@ -7,7 +7,6 @@ module Breakout exposing (game)
 
 import Playground exposing (..)
 import Array
-import Random
 import Set
 
 game =
@@ -20,7 +19,6 @@ game =
 
 ballRadius = 10
 ballColor = black
-initialBallSpeed = 8
 
 paddleWidth = 200
 paddleHeight = 20
@@ -116,7 +114,7 @@ getBrick (xIndex, yIndex) =
     }
 
 ------ VIEW ------
-
+view: Computer -> Model -> List Shape
 view computer model =
   [rectangle white computer.screen.width computer.screen.height]
     ++ [model.ball      |> viewBall]
@@ -138,39 +136,47 @@ viewBrick : Brick -> Shape
 viewBrick brick =
   rectangle brick.color brickWidth brickHeight
     |> move brick.x brick.y
-
+viewHelpMessage : Computer -> Shape -> Shape
 viewHelpMessage computer helpMessage = 
   helpMessage
     |> move 0 (computer.screen.top - paddleHeight)
 
 ------ UPDATE ------
-
+update : Computer -> Model -> Model 
 update computer model = 
   case model.state of 
     Playing -> playingUpdate computer model 
     GameOver -> gameOverUpdate computer model 
     NewRound -> newRoundUpdate computer model
 
+playingUpdate : Computer -> Model -> Model 
 playingUpdate computer model =
   model
     |> handleMotion computer
     |> checkDeath computer
     |> updateBallAndBricks
 
+
+newRoundUpdate : Computer -> Model -> Model 
+newRoundUpdate computer model= 
+  model 
+    |> handlePause computer
+
+gameOverUpdate : Computer -> Model -> Model 
 gameOverUpdate computer model = 
   model 
     |> endGame computer 
 
+-- Handles end of Game state and allows player to play again if 'P' key is pressed 
+endGame : Computer -> Model -> Model 
 endGame computer model = 
    if keyPressed "P" computer then 
     initialState
   else 
     model
-  
-newRoundUpdate computer model= 
-  model 
-    |> handlePause computer
 
+-- When waiting for new round (when game is paused between rounds), handles switch to state of playing when R key is pressed
+handlePause : Computer -> Model -> Model 
 handlePause computer model= 
   if keyPressed "R" computer then 
     { model 
@@ -179,13 +185,16 @@ handlePause computer model=
       }
   else 
     model
-          
+
+-- Handles all continous motion of Ball (besides when it hits a Brick) and Paddle
+handleMotion : Computer -> Model -> Model          
 handleMotion computer model =
   { model
    | ball = (moveBall computer model model.ball)
    , paddle = (movePaddle computer model.paddle)
    }
 
+-- Handles all the movement ball makes (besides when it needs to bounce off a brick which is handled seperately to allow us to remove Bricks and change velocity together)
 moveBall : Computer -> Model -> Ball -> Ball
 moveBall computer model ball =
   { ball
@@ -195,7 +204,7 @@ moveBall computer model ball =
     , dy = verticalBounce computer model
     }
 
--- this is a helper function written by Julia Kispert to have the ball bounce off the edges of the screen
+-- Handles if Ball bounces off sizes of the screen 
 horizontalBounce: Computer -> Model -> Number
 horizontalBounce computer model =
   if ((model.ball.x + model.ball.dx - ballRadius < computer.screen.left) || (model.ball.x + model.ball.dx + ballRadius > computer.screen.right))
@@ -204,6 +213,7 @@ horizontalBounce computer model =
   else
     model.ball.dx
 
+-- Handles how ball bounces vertically (either off top of screen or off Paddle)
 verticalBounce: Computer -> Model -> Number
 verticalBounce computer model =
   if ((model.ball.y + model.ball.dy + ballRadius > computer.screen.top))
@@ -212,6 +222,7 @@ verticalBounce computer model =
   else
     bounceOffPaddle model
 
+-- Checks if Ball needs to bounce of Paddle
 bounceOffPaddle : Model -> Float
 bounceOffPaddle model = 
   let 
@@ -223,10 +234,13 @@ bounceOffPaddle model =
     else 
       model.ball.dy
 
+-- Moves Paddle based on computer mouse x position 
 movePaddle : Computer -> Paddle -> Paddle
 movePaddle computer paddle =
   { paddle | x = computer.mouse.x }
 
+-- Checks if Game needs to be paused for NewRound (lost of a life), if the Game is over as no lives left, or if the Game has been one (no more Bricks)
+checkDeath : Computer -> Model -> Model
 checkDeath computer model = 
   if (model.ball.y + ballRadius < computer.screen.bottom)
   then 
@@ -250,19 +264,25 @@ checkDeath computer model =
       }
   else
     model
-  
+
+-- Updates Model by forming tuple of Ball and Bricks to check for collision 
+updateBallAndBricks : Model -> { ball : Ball, paddle : Paddle, bricks : List Brick, state : GameState, helpMessage : Shape, lives : Int }
 updateBallAndBricks model =
   let
-    t = checkBrickCollisions model
+    t = handleBrickCollisions model
   in
     { model 
       | ball = Tuple.first t
       , bricks = Tuple.second t
     }
 
-checkBrickCollisions model =
+-- Handles updating Ball and each Brick within Bricks 
+handleBrickCollisions : Model -> (Ball, List Brick)
+handleBrickCollisions model =
   List.foldl checkBrickCollision (model.ball, []) model.bricks
 
+
+-- Checks if any part of Ball lies within a Brick, meaning it has been hit before causing the Ball to bounce and Brick to be removed/hit   
 checkBrickCollision: Brick -> (Ball, List Brick) -> (Ball, List Brick)
 checkBrickCollision brick (ball, bricks) =
   let
@@ -289,6 +309,7 @@ checkBrickCollision brick (ball, bricks) =
       (ball, brick :: bricks)
 
 -- Helper Methods from Asteroids Programming Languages Homework -- 
+keyPressed : String -> Computer -> Bool
 keyPressed keyName computer =
   [ String.toLower keyName
   , String.toUpper keyName
