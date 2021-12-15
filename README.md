@@ -8,7 +8,7 @@ The initial configuration of the Breakout game appears in the image below. The c
 
 The slightly larger rectangle at the bottom is the paddle. The paddle is in a fixed position in the vertical dimension, but moves back and forth horizontally across the screen along with the mouse until it reaches the edge of its space.
 
-The ball will be released at an random angle and your job is to move the paddle with your mouse to prevent the ball from going off the screen and hit all the bricks. When the ball hits a brick it will disapear The ball will have 3 lives.
+The ball will be released at an random angle and your job is to move the paddle with your mouse to prevent the ball from going off the screen and hit all the bricks. When the ball hits a brick it will disapear The ball will have 3 lives. When the ball goes of the screen this signifies the loss of life, and a new round to start. To start the next round press "R" key on your keyboard. If the game ends at any point press "P" key to play again.
 
 Note: the trajectory of the ball will change based on where it hits the brick, the paddle or the sides of the screen. 
 
