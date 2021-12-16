@@ -31,7 +31,7 @@ brickHeight = 30
 screenWidth = 600
 screenHeight = 500
 
------- MODEL ------
+------ TYPES ------
 
 type alias Ball =
   { x : Float
@@ -222,6 +222,7 @@ verticalBounce computer model =
   else
     bounceOffPaddle model
 
+
 -- Checks if Ball needs to bounce of Paddle
 bounceOffPaddle : Model -> Float
 bounceOffPaddle model = 
@@ -239,7 +240,7 @@ movePaddle : Computer -> Paddle -> Paddle
 movePaddle computer paddle =
   { paddle | x = computer.mouse.x }
 
--- Checks if Game needs to be paused for NewRound (lost of a life), if the Game is over as no lives left, or if the Game has been one (no more Bricks)
+-- Checks if Game needs to be paused for NewRound (lost of a life), if the Game is over as no lives left, or if the Game has been won (no more Bricks)
 checkDeath : Computer -> Model -> Model
 checkDeath computer model = 
   if (model.ball.y + ballRadius < computer.screen.bottom)
